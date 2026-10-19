@@ -1,0 +1,7 @@
+# Credentials: never commit. Templates (*.example) are safe to commit.
+.env
+.env.*
+!*.example
+
+# macOS
+.DS_Store

@@ -1,0 +1,31 @@
+# Gluetun: connects to a VPN provider and runs an HTTP proxy and a SOCKS5 proxy for one VPN sandbox.
+# Only applications that you start with the vpn-sandbox scripts use the proxies. Other traffic does not use the VPN.
+# Do not run this file directly. The scripts set the variables from sandboxes.conf.
+services:
+  gluetun:
+    # The Gluetun version is fixed to one tested image (digest), so a new Gluetun release cannot break the setup.
+    # Tested image: nightly build "latest" of 2026-10-16, Gluetun commit 41654bf.
+    # Numbered releases up to v3.41.3 do not have the SOCKS5 proxy, so do not change to them.
+    # To update: see "Update Gluetun" in README.md.
+    image: qmcgaw/gluetun@sha256:945d325be5c2abe50b89c84791b51a4e3d039737ed3703b2482c1e2b396e8fbe
+    container_name: ${VPN_CONTAINER:?run the vpn-sandbox scripts, not docker compose directly}
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      # The proxies are available only on this Mac (127.0.0.1), not on the local network.
+      - "127.0.0.1:${VPN_HTTP_PORT:?}:8888/tcp"
+      - "127.0.0.1:${VPN_SOCKS_PORT:?}:1080/tcp"
+    env_file:
+      # Credentials and VPN type (openvpn or wireguard) of the provider.
+      - .env.${VPN_PROVIDER:?}
+    environment:
+      - VPN_SERVICE_PROVIDER=${VPN_PROVIDER:?}
+      - SERVER_COUNTRIES=${VPN_COUNTRY:?}
+      - HTTPPROXY=on
+      - HTTPPROXY_LISTENING_ADDRESS=:8888
+      - SOCKS5_ENABLED=on
+      - SOCKS5_LISTENING_ADDRESS=:1080
+      - TZ=${VPN_TZ:?}
+    restart: unless-stopped
